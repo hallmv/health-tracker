@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Daily Health Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
   :root { color-scheme: light; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -41,12 +42,6 @@
     color: #888;
     margin-bottom: 12px;
   }
-  .date-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 4px;
-  }
   input[type="date"] {
     font-size: 1rem;
     font-family: inherit;
@@ -58,8 +53,6 @@
     outline: none;
   }
   input[type="date"]:focus { border-color: #6c63ff; }
-
-  /* Toggle pills */
   .toggle-row {
     display: flex;
     gap: 8px;
@@ -84,25 +77,10 @@
     transition: all 0.15s;
     user-select: none;
   }
-  .pill-btn.active {
-    background: #6c63ff;
-    border-color: #6c63ff;
-    color: #fff;
-    font-weight: 600;
-  }
-  .pill-btn.green.active {
-    background: #22c55e;
-    border-color: #22c55e;
-  }
-  .pill-btn.orange.active {
-    background: #f97316;
-    border-color: #f97316;
-  }
-  .pill-btn.red.active {
-    background: #ef4444;
-    border-color: #ef4444;
-  }
-
+  .pill-btn.active { background: #6c63ff; border-color: #6c63ff; color: #fff; font-weight: 600; }
+  .pill-btn.green.active { background: #22c55e; border-color: #22c55e; }
+  .pill-btn.orange.active { background: #f97316; border-color: #f97316; }
+  .pill-btn.red.active { background: #ef4444; border-color: #ef4444; }
   .row-group {
     display: flex;
     align-items: flex-start;
@@ -110,21 +88,10 @@
     margin-bottom: 8px;
     flex-wrap: wrap;
   }
-  .row-group .toggle-label {
-    min-width: 120px;
-    padding-top: 7px;
-    margin-bottom: 0;
-  }
-
-  /* Dog walks counter */
-  .counter {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
+  .row-group .toggle-label { min-width: 120px; padding-top: 7px; margin-bottom: 0; }
+  .counter { display: flex; align-items: center; gap: 8px; }
   .counter-btn {
-    width: 32px;
-    height: 32px;
+    width: 32px; height: 32px;
     border-radius: 50%;
     border: 1.5px solid #d0d3e0;
     background: #f7f8fa;
@@ -135,19 +102,8 @@
     transition: all 0.15s;
   }
   .counter-btn:hover { background: #e0e2ea; }
-  .counter-val {
-    font-size: 1.3rem;
-    font-weight: 700;
-    min-width: 28px;
-    text-align: center;
-    color: #1a1a2e;
-  }
-  .counter-label {
-    font-size: 0.8rem;
-    color: #888;
-  }
-
-  /* Strength sub-options */
+  .counter-val { font-size: 1.3rem; font-weight: 700; min-width: 28px; text-align: center; color: #1a1a2e; }
+  .counter-label { font-size: 0.8rem; color: #888; }
   .sub-options {
     display: none;
     margin-top: 8px;
@@ -157,224 +113,122 @@
     border: 1px dashed #d0d3e0;
   }
   .sub-options.visible { display: block; }
-  .sub-options .toggle-label {
-    font-size: 0.78rem;
-    color: #888;
-    margin-bottom: 6px;
-  }
-  .minutes-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 10px;
-  }
+  .sub-options .toggle-label { font-size: 0.78rem; color: #888; margin-bottom: 6px; }
+  .minutes-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
   .minutes-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: #f7f8fa;
-    border: 1px solid #e0e2ea;
-    border-radius: 8px;
-    padding: 5px 10px;
-    font-size: 0.84rem;
-    color: #444;
+    display: flex; align-items: center; gap: 6px;
+    background: #f7f8fa; border: 1px solid #e0e2ea;
+    border-radius: 8px; padding: 5px 10px;
+    font-size: 0.84rem; color: #444;
   }
   .minutes-item label { font-weight: 500; white-space: nowrap; }
   .minutes-item input[type="number"] {
-    width: 58px;
-    border: 1.5px solid #d0d3e0;
-    border-radius: 6px;
-    padding: 3px 6px;
-    font-size: 0.84rem;
-    font-family: inherit;
-    color: #1a1a2e;
-    background: #fff;
-    outline: none;
+    width: 58px; border: 1.5px solid #d0d3e0; border-radius: 6px;
+    padding: 3px 6px; font-size: 0.84rem; font-family: inherit;
+    color: #1a1a2e; background: #fff; outline: none;
   }
   .minutes-item input[type="number"]:focus { border-color: #6c63ff; }
   .minutes-item span { color: #888; font-size: 0.8rem; }
-
-  /* Log button */
   .log-btn {
-    width: 100%;
-    padding: 13px;
-    background: #6c63ff;
-    color: white;
-    border: none;
-    border-radius: 10px;
-    font-size: 1rem;
-    font-weight: 700;
-    cursor: pointer;
-    font-family: inherit;
-    letter-spacing: 0.02em;
-    transition: background 0.15s;
-    margin-top: 4px;
+    width: 100%; padding: 13px;
+    background: #6c63ff; color: white;
+    border: none; border-radius: 10px;
+    font-size: 1rem; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+    letter-spacing: 0.02em; transition: background 0.15s; margin-top: 4px;
   }
   .log-btn:hover { background: #5a52e0; }
-
-  /* Toast */
+  .log-btn:disabled { background: #aaa; cursor: not-allowed; }
   .toast {
-    position: fixed;
-    bottom: 24px;
-    left: 50%;
+    position: fixed; bottom: 24px; left: 50%;
     transform: translateX(-50%);
-    background: #22c55e;
-    color: white;
-    padding: 10px 22px;
-    border-radius: 20px;
-    font-weight: 600;
-    font-size: 0.9rem;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s;
-    z-index: 999;
+    background: #22c55e; color: white;
+    padding: 10px 22px; border-radius: 20px;
+    font-weight: 600; font-size: 0.9rem;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s; z-index: 999;
   }
   .toast.show { opacity: 1; }
-
-  /* Log table */
+  .toast.error { background: #ef4444; }
   .log-header {
-    display: flex;
-    align-items: center;
+    display: flex; align-items: center;
     justify-content: space-between;
-    margin-bottom: 12px;
-    flex-wrap: wrap;
-    gap: 8px;
+    margin-bottom: 12px; flex-wrap: wrap; gap: 8px;
   }
   .log-header h2 { margin-bottom: 0; }
   .export-btn {
-    padding: 6px 14px;
-    background: #fff;
-    border: 1.5px solid #6c63ff;
-    border-radius: 8px;
-    color: #6c63ff;
-    font-size: 0.82rem;
-    font-weight: 700;
-    font-family: inherit;
-    cursor: pointer;
-    transition: all 0.15s;
+    padding: 6px 14px; background: #fff;
+    border: 1.5px solid #6c63ff; border-radius: 8px;
+    color: #6c63ff; font-size: 0.82rem; font-weight: 700;
+    font-family: inherit; cursor: pointer; transition: all 0.15s;
   }
   .export-btn:hover { background: #6c63ff; color: #fff; }
   .clear-btn {
-    padding: 6px 14px;
-    background: #fff;
-    border: 1.5px solid #ef4444;
-    border-radius: 8px;
-    color: #ef4444;
-    font-size: 0.82rem;
-    font-weight: 700;
-    font-family: inherit;
-    cursor: pointer;
-    transition: all 0.15s;
+    padding: 6px 14px; background: #fff;
+    border: 1.5px solid #ef4444; border-radius: 8px;
+    color: #ef4444; font-size: 0.82rem; font-weight: 700;
+    font-family: inherit; cursor: pointer; transition: all 0.15s;
   }
   .clear-btn:hover { background: #ef4444; color: #fff; }
   .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
-
-  .log-table-wrap {
-    overflow-x: auto;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.8rem;
-    min-width: 600px;
-  }
+  .log-table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.8rem; min-width: 600px; }
   th {
-    background: #f0f0f7;
-    padding: 7px 10px;
-    text-align: left;
-    font-weight: 700;
-    color: #555;
-    border-bottom: 2px solid #e0e2ea;
-    white-space: nowrap;
+    background: #f0f0f7; padding: 7px 10px; text-align: left;
+    font-weight: 700; color: #555; border-bottom: 2px solid #e0e2ea; white-space: nowrap;
   }
-  td {
-    padding: 7px 10px;
-    border-bottom: 1px solid #f0f0f7;
-    vertical-align: top;
-    color: #333;
-  }
+  td { padding: 7px 10px; border-bottom: 1px solid #f0f0f7; vertical-align: top; color: #333; }
   tr:last-child td { border-bottom: none; }
   tr:hover td { background: #fafafa; }
   .check { color: #22c55e; font-weight: 700; }
   .cross { color: #ccc; }
-  .empty-msg {
-    text-align: center;
-    color: #aaa;
-    padding: 24px;
-    font-size: 0.88rem;
-  }
+  .empty-msg { text-align: center; color: #aaa; padding: 24px; font-size: 0.88rem; }
   .mounjaro-badge {
-    background: #fef3c7;
-    color: #92400e;
-    padding: 1px 7px;
-    border-radius: 10px;
-    font-size: 0.75rem;
-    font-weight: 600;
+    background: #fef3c7; color: #92400e;
+    padding: 1px 7px; border-radius: 10px;
+    font-size: 0.75rem; font-weight: 600;
   }
-  .section-divider {
-    height: 1px;
-    background: #e8eaf0;
-    margin: 14px 0;
-  }
+  .section-divider { height: 1px; background: #e8eaf0; margin: 14px 0; }
   textarea {
-    width: 100%;
-    border: 1.5px solid #e0e2ea;
-    border-radius: 8px;
-    padding: 8px 10px;
-    font-size: 0.88rem;
-    font-family: inherit;
-    color: #1a1a2e;
-    background: #f7f8fa;
-    resize: vertical;
-    min-height: 70px;
-    outline: none;
-    line-height: 1.5;
+    width: 100%; border: 1.5px solid #e0e2ea; border-radius: 8px;
+    padding: 8px 10px; font-size: 0.88rem; font-family: inherit;
+    color: #1a1a2e; background: #f7f8fa; resize: vertical;
+    min-height: 70px; outline: none; line-height: 1.5;
   }
   textarea:focus { border-color: #6c63ff; }
-  .weight-row {
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-    align-items: flex-end;
-  }
-  .weight-field {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
+  .weight-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
+  .weight-field { display: flex; flex-direction: column; gap: 4px; }
   .weight-field label {
-    font-size: 0.78rem;
-    color: #888;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    font-size: 0.78rem; color: #888; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.05em;
   }
   .weight-field input[type="number"] {
-    width: 100px;
-    border: 1.5px solid #d0d3e0;
-    border-radius: 8px;
-    padding: 6px 10px;
-    font-size: 1rem;
-    font-family: inherit;
-    color: #1a1a2e;
-    background: #f7f8fa;
-    outline: none;
+    width: 100px; border: 1.5px solid #d0d3e0; border-radius: 8px;
+    padding: 6px 10px; font-size: 1rem; font-family: inherit;
+    color: #1a1a2e; background: #f7f8fa; outline: none;
   }
   .weight-field input[type="number"]:focus { border-color: #6c63ff; }
-  .weight-loss-display {
-    font-size: 1.1rem;
-    font-weight: 700;
-    padding-bottom: 6px;
-  }
+  .weight-loss-display { font-size: 1.1rem; font-weight: 700; padding-bottom: 6px; }
   .weight-loss-display.loss { color: #22c55e; }
   .weight-loss-display.gain { color: #ef4444; }
   .weight-loss-display.neutral { color: #888; }
+  .sync-status {
+    font-size: 0.75rem; color: #aaa; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .sync-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #aaa; display: inline-block;
+  }
+  .sync-dot.ok { background: #22c55e; }
+  .sync-dot.err { background: #ef4444; }
 </style>
 </head>
 <body>
 
 <h1>🌿 Daily Health Tracker</h1>
 <p class="subtitle">Log your meds and movement — it all adds up.</p>
+<div class="sync-status"><span class="sync-dot" id="syncDot"></span><span id="syncLabel">Connecting…</span></div>
 
 <!-- LOG FORM -->
 <div class="card">
@@ -388,7 +242,6 @@
 
 <div class="card">
   <h2>💊 Medication</h2>
-
   <div class="row-group">
     <span class="toggle-label">Morning meds</span>
     <div class="toggle-row">
@@ -397,7 +250,6 @@
       <button class="pill-btn" data-group="mornMed" data-val="" onclick="selectPill(this)">—</button>
     </div>
   </div>
-
   <div class="row-group">
     <span class="toggle-label">Evening meds</span>
     <div class="toggle-row">
@@ -406,9 +258,7 @@
       <button class="pill-btn" data-group="evenMed" data-val="" onclick="selectPill(this)">—</button>
     </div>
   </div>
-
   <div class="section-divider" id="mounjaroDiv"></div>
-
   <div class="row-group" id="mounjaroSection">
     <span class="toggle-label">Mounjaro (weekly)</span>
     <div class="toggle-row">
@@ -416,7 +266,6 @@
       <button class="pill-btn" data-group="mounjaro" data-val="no" onclick="selectPill(this)">Not this week</button>
     </div>
   </div>
-
   <div class="sub-options" id="mounjaroOptions">
     <p class="toggle-label">What dosage?</p>
     <div class="toggle-row">
@@ -443,7 +292,6 @@
 <div class="card">
   <h2>🏃 Other Exercise</h2>
   <p class="toggle-label" style="margin-bottom:10px;">Select all that apply today</p>
-
   <div class="toggle-row" id="exerciseGroup">
     <button class="pill-btn" data-ex="Bike Outdoor" onclick="toggleExercise(this)">🚴 Bike (Outdoor)</button>
     <button class="pill-btn" data-ex="Bike Indoor" onclick="toggleExercise(this)">🚲 Bike (Indoor)</button>
@@ -454,9 +302,7 @@
     <button class="pill-btn" data-ex="Rock Stepper" onclick="toggleExercise(this)">🪨 Rock Stepper</button>
     <button class="pill-btn" data-ex="Physical Therapy" onclick="toggleExercise(this)">🩺 Physical Therapy</button>
   </div>
-
   <div class="minutes-row" id="minutesRow"></div>
-
   <div class="sub-options" id="strengthOptions">
     <p class="toggle-label">Which type of strength training?</p>
     <div class="toggle-row">
@@ -473,8 +319,7 @@
   <div class="weight-row">
     <div class="weight-field">
       <label>Current Weight</label>
-      <input type="number" id="weightInput" min="50" max="600" step="0.1" placeholder="lbs"
-        oninput="updateWeightLoss()">
+      <input type="number" id="weightInput" min="50" max="600" step="0.1" placeholder="lbs" oninput="updateWeightLoss()">
     </div>
     <div class="weight-field" id="weightLossField" style="display:none;">
       <label>Change from last week</label>
@@ -497,7 +342,7 @@
   <textarea id="notesInput" placeholder="Symptoms, how you're feeling, anything worth remembering…"></textarea>
 </div>
 
-<button class="log-btn" onclick="logEntry()">+ Save Today's Entry</button>
+<button class="log-btn" id="saveBtn" onclick="logEntry()">+ Save Today's Entry</button>
 
 <!-- LOG TABLE -->
 <div class="card" style="margin-top:20px;">
@@ -513,76 +358,93 @@
     <table id="logTable">
       <thead>
         <tr>
-          <th>Date</th>
-          <th>AM Meds</th>
-          <th>PM Meds</th>
-          <th>Mounjaro</th>
-          <th>Dog Walks</th>
-          <th>Exercise</th>
-          <th>Weight</th>
-          <th>Notes</th>
+          <th>Date</th><th>AM Meds</th><th>PM Meds</th><th>Mounjaro</th>
+          <th>Dog Walks</th><th>Exercise</th><th>Weight</th><th>Notes</th><th></th>
         </tr>
       </thead>
       <tbody id="logBody">
-        <tr><td colspan="8" class="empty-msg">No entries yet — log your first day!</td></tr>
+        <tr><td colspan="9" class="empty-msg">Loading…</td></tr>
       </tbody>
     </table>
   </div>
 </div>
 
-<div class="toast" id="toast">Entry saved! ✓</div>
+<div class="toast" id="toast"></div>
 
 <script>
-// ---- State ----
-const MINUTES_EXERCISES = new Set(['Bike Outdoor','Bike Indoor','Pilates','Treadmill','Elliptical','Rock Stepper']);
+// ---- Supabase ----
+const SUPABASE_URL = 'https://xexsvnxnihuoflelqmfi.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhleHN2bnhuaWh1b2ZsZWxxbWZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5Mzk3MzUsImV4cCI6MjA5NjUxNTczNX0.9PNEh1cQv8cWmb9NEC22HZFpuigZqaWztQa8i3J1LzY';
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const state = {
-  mornMed: '',
-  evenMed: '',
-  mounjaro: 'no',
-  mounjaroDose: '',
-  walks: 0,
-  exercises: new Set(),
-  exerciseMinutes: {},
-  strength: new Set(),
-  weight: '',
-  notes: ''
-};
+// ---- In-memory cache ----
+let cachedEntries = [];
 
-// ---- Init date ----
-function todayStr() {
-  const d = new Date();
-  return d.toISOString().slice(0, 10);
+function setSyncStatus(ok, label) {
+  document.getElementById('syncDot').className = 'sync-dot ' + (ok ? 'ok' : 'err');
+  document.getElementById('syncLabel').textContent = label;
 }
 
+// ---- Load from Supabase ----
+async function refreshLog() {
+  const { data, error } = await db
+    .from('health_log')
+    .select('date, data')
+    .order('date', { ascending: false });
+  if (error) {
+    setSyncStatus(false, 'Could not connect to database');
+    return;
+  }
+  cachedEntries = data.map(row => ({ date: row.date, ...row.data }));
+  setSyncStatus(true, 'Synced');
+  renderTable(cachedEntries);
+}
+
+// ---- Save one entry to Supabase ----
+async function saveEntry(entry) {
+  const { date, ...data } = entry;
+  const { error } = await db
+    .from('health_log')
+    .upsert({ date, data }, { onConflict: 'date' });
+  if (error) throw error;
+}
+
+// ---- State ----
+const MINUTES_EXERCISES = new Set(['Bike Outdoor','Bike Indoor','Pilates','Treadmill','Elliptical','Rock Stepper']);
+const state = {
+  mornMed: '', evenMed: '', mounjaro: 'no', mounjaroDose: '',
+  walks: 0, exercises: new Set(), exerciseMinutes: {}, strength: new Set(),
+  weight: '', notes: ''
+};
+
+// ---- Helpers ----
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
 function isSaturday(dateStr) {
-  // Parse as local date to avoid timezone shift
   const [y, m, d] = dateStr.split('-').map(Number);
   return new Date(y, m - 1, d).getDay() === 6;
 }
+function loadLog() { return cachedEntries; }
 
+// ---- Date change ----
 function onDateChange() {
   const dateStr = document.getElementById('logDate').value;
   if (!dateStr) return;
   const [y, m, d] = dateStr.split('-').map(Number);
-  const dayName = new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'long' });
-  document.getElementById('dayLabel').textContent = dayName;
-
+  document.getElementById('dayLabel').textContent =
+    new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'long' });
   const sat = isSaturday(dateStr);
   document.getElementById('mounjaroSection').style.display = sat ? '' : 'none';
   document.getElementById('mounjaroDiv').style.display = sat ? '' : 'none';
   document.getElementById('weightCard').style.display = sat ? '' : 'none';
-
-  const existing = loadLog().find(e => e.date === dateStr);
-  if (existing) {
-    populateForm(existing, sat);
-  } else {
-    clearForm(sat);
-  }
+  const existing = cachedEntries.find(e => e.date === dateStr);
+  if (existing) populateForm(existing, sat);
+  else clearForm(sat);
 }
 
 function parseExerciseString(str) {
-  if (!str) return { list: [], minutes: {}, strength: '' };
+  if (!str) return { list: [], minutes: {}, strength: [] };
   const parts = str.split(', ');
   const list = [], minutes = {};
   const KNOWN_STRENGTH = new Set(['Upper Body','Lower Body','Core','Full Body']);
@@ -594,14 +456,12 @@ function parseExerciseString(str) {
     else if (strengthMatch) {
       list.push('Strength');
       strength = strengthMatch[1].split(', ').filter(s => KNOWN_STRENGTH.has(s));
-    }
-    else if (p) list.push(p);
+    } else if (p) list.push(p);
   }
   return { list, minutes, strength };
 }
 
 function populateForm(entry, sat) {
-  // Meds
   const setPill = (group, val) => {
     document.querySelectorAll(`[data-group="${group}"]`).forEach(b => {
       b.classList.toggle('active', b.dataset.val === val);
@@ -611,8 +471,6 @@ function populateForm(entry, sat) {
   state.evenMed = entry.evenMed || '';
   setPill('mornMed', state.mornMed);
   setPill('evenMed', state.evenMed);
-
-  // Mounjaro
   if (sat) {
     state.mounjaro = entry.mounjaro || 'no';
     state.mounjaroDose = entry.mounjaroDose || '';
@@ -623,22 +481,15 @@ function populateForm(entry, sat) {
     state.mounjaro = 'no'; state.mounjaroDose = '';
     document.getElementById('mounjaroOptions').classList.remove('visible');
   }
-
-  // Walks
   state.walks = entry.walks || 0;
   document.getElementById('walkCount').textContent = state.walks;
-
-  // Exercises — prefer structured data, fall back to parsing string
   const exData = entry.exerciseList
-    ? { list: entry.exerciseList, minutes: entry.exerciseMinutes || {}, strength: entry.strength || '' }
+    ? { list: entry.exerciseList, minutes: entry.exerciseMinutes || {}, strength: entry.strength || [] }
     : parseExerciseString(entry.exercise);
-
   state.exercises = new Set(exData.list);
   state.exerciseMinutes = exData.minutes;
-  // strength may be array (new) or string (old entries)
   const strengthArr = Array.isArray(exData.strength) ? exData.strength : (exData.strength ? [exData.strength] : []);
   state.strength = new Set(strengthArr);
-
   document.querySelectorAll('[data-ex]').forEach(b => {
     b.classList.toggle('active', state.exercises.has(b.dataset.ex));
   });
@@ -647,8 +498,6 @@ function populateForm(entry, sat) {
     b.classList.toggle('active', state.strength.has(b.dataset.val));
   });
   renderMinutesInputs();
-
-  // Weight & notes
   if (sat) {
     state.weight = entry.weight || '';
     document.getElementById('weightInput').value = state.weight;
@@ -681,9 +530,7 @@ function clearForm(sat) {
 }
 
 function getPrevSaturdayWeight(currentDateStr) {
-  const entries = loadLog();
-  // Find Saturday entries before currentDateStr that have a weight
-  return entries
+  return cachedEntries
     .filter(e => e.date < currentDateStr && isSaturday(e.date) && e.weight)
     .sort((a, b) => b.date.localeCompare(a.date))[0] || null;
 }
@@ -692,82 +539,45 @@ function updateWeightLoss() {
   const dateStr = document.getElementById('logDate').value;
   const current = parseFloat(document.getElementById('weightInput').value);
   state.weight = isNaN(current) ? '' : current;
-
   const lossField = document.getElementById('weightLossField');
   const lossDisplay = document.getElementById('weightLossDisplay');
   const totalField = document.getElementById('totalLossField');
   const totalDisplay = document.getElementById('totalLossDisplay');
-
-  if (!current) {
-    lossField.style.display = 'none';
-    totalField.style.display = 'none';
-    return;
-  }
-
-  // Weekly change
+  if (!current) { lossField.style.display = 'none'; totalField.style.display = 'none'; return; }
   const prev = getPrevSaturdayWeight(dateStr);
   if (prev) {
     const diff = prev.weight - current;
     lossField.style.display = '';
-    if (Math.abs(diff) < 0.05) {
-      lossDisplay.textContent = 'No change';
-      lossDisplay.className = 'weight-loss-display neutral';
-    } else if (diff > 0) {
-      lossDisplay.textContent = `−${diff.toFixed(1)} lbs`;
-      lossDisplay.className = 'weight-loss-display loss';
-    } else {
-      lossDisplay.textContent = `+${Math.abs(diff).toFixed(1)} lbs`;
-      lossDisplay.className = 'weight-loss-display gain';
-    }
-  } else {
-    lossField.style.display = 'none';
-  }
-
-  // Total from first recorded weight
-  const allEntries = loadLog();
-  const firstEntry = allEntries
+    if (Math.abs(diff) < 0.05) { lossDisplay.textContent = 'No change'; lossDisplay.className = 'weight-loss-display neutral'; }
+    else if (diff > 0) { lossDisplay.textContent = `−${diff.toFixed(1)} lbs`; lossDisplay.className = 'weight-loss-display loss'; }
+    else { lossDisplay.textContent = `+${Math.abs(diff).toFixed(1)} lbs`; lossDisplay.className = 'weight-loss-display gain'; }
+  } else { lossField.style.display = 'none'; }
+  const firstEntry = cachedEntries
     .filter(e => e.weight && isSaturday(e.date) && e.date !== dateStr)
     .sort((a, b) => a.date.localeCompare(b.date))[0];
   const timeField = document.getElementById('timeField');
   const timeDisplay = document.getElementById('timeDisplay');
-
   if (firstEntry) {
     const total = firstEntry.weight - current;
     totalField.style.display = '';
-    if (Math.abs(total) < 0.05) {
-      totalDisplay.textContent = 'No change';
-      totalDisplay.className = 'weight-loss-display neutral';
-    } else if (total > 0) {
-      totalDisplay.textContent = `−${total.toFixed(1)} lbs`;
-      totalDisplay.className = 'weight-loss-display loss';
-    } else {
-      totalDisplay.textContent = `+${Math.abs(total).toFixed(1)} lbs`;
-      totalDisplay.className = 'weight-loss-display gain';
-    }
-
-    // Time on journey
+    if (Math.abs(total) < 0.05) { totalDisplay.textContent = 'No change'; totalDisplay.className = 'weight-loss-display neutral'; }
+    else if (total > 0) { totalDisplay.textContent = `−${total.toFixed(1)} lbs`; totalDisplay.className = 'weight-loss-display loss'; }
+    else { totalDisplay.textContent = `+${Math.abs(total).toFixed(1)} lbs`; totalDisplay.className = 'weight-loss-display gain'; }
     const [sy, sm, sd] = firstEntry.date.split('-').map(Number);
     const [cy, cm, cd] = dateStr.split('-').map(Number);
     const totalMonths = (cy - sy) * 12 + (cm - sm) + (cd < sd ? -1 : 0);
     const weeks = Math.round((new Date(cy, cm-1, cd) - new Date(sy, sm-1, sd)) / (7 * 24 * 60 * 60 * 1000));
     timeField.style.display = '';
-    if (totalMonths < 1) {
-      timeDisplay.textContent = `${weeks} week${weeks !== 1 ? 's' : ''}`;
-    } else {
-      timeDisplay.textContent = `${totalMonths} month${totalMonths !== 1 ? 's' : ''}`;
-    }
+    timeDisplay.textContent = totalMonths < 1 ? `${weeks} week${weeks !== 1 ? 's' : ''}` : `${totalMonths} month${totalMonths !== 1 ? 's' : ''}`;
     timeDisplay.className = 'weight-loss-display neutral';
-
     document.getElementById('prevWeightNote').textContent = `Starting weight: ${firstEntry.weight} lbs (${firstEntry.date})`;
   } else {
-    totalField.style.display = 'none';
-    timeField.style.display = 'none';
+    totalField.style.display = 'none'; timeField.style.display = 'none';
     document.getElementById('prevWeightNote').textContent = 'This will become your starting weight.';
   }
 }
 
 document.getElementById('logDate').value = todayStr();
-onDateChange();
 
 // ---- Pill selectors ----
 function selectPill(btn) {
@@ -779,21 +589,18 @@ function selectPill(btn) {
   else if (group === 'mounjaro') {
     state.mounjaro = btn.dataset.val;
     const opts = document.getElementById('mounjaroOptions');
-    if (btn.dataset.val === 'yes') {
-      opts.classList.add('visible');
-    } else {
+    if (btn.dataset.val === 'yes') { opts.classList.add('visible'); }
+    else {
       opts.classList.remove('visible');
       state.mounjaroDose = '';
       document.querySelectorAll('[data-group="mounjaroDose"]').forEach(b => b.classList.remove('active'));
     }
-  }
-  else if (group === 'mounjaroDose') state.mounjaroDose = btn.dataset.val;
-  // strength is handled by toggleStrengthType
+  } else if (group === 'mounjaroDose') state.mounjaroDose = btn.dataset.val;
 }
 
 // ---- Walk counter ----
 function changeWalks(delta) {
-  state.walks = Math.max(0, Math.min(3, state.walks + delta));
+  state.walks = Math.max(0, Math.min(10, state.walks + delta));
   document.getElementById('walkCount').textContent = state.walks;
 }
 
@@ -815,71 +622,39 @@ function renderMinutesInputs() {
 // ---- Exercise multi-select ----
 function toggleExercise(btn) {
   const ex = btn.dataset.ex;
-  if (btn.classList.contains('active')) {
-    btn.classList.remove('active');
-    state.exercises.delete(ex);
-    delete state.exerciseMinutes[ex];
-  } else {
-    btn.classList.add('active');
-    state.exercises.add(ex);
-  }
+  if (btn.classList.contains('active')) { btn.classList.remove('active'); state.exercises.delete(ex); delete state.exerciseMinutes[ex]; }
+  else { btn.classList.add('active'); state.exercises.add(ex); }
   renderMinutesInputs();
 }
-
 function toggleStrength(btn) {
   const ex = btn.dataset.ex;
   if (btn.classList.contains('active')) {
-    btn.classList.remove('active');
-    state.exercises.delete(ex);
-    state.strength = new Set();
+    btn.classList.remove('active'); state.exercises.delete(ex); state.strength = new Set();
     document.getElementById('strengthOptions').classList.remove('visible');
     document.querySelectorAll('[data-group="strength"]').forEach(b => b.classList.remove('active'));
-  } else {
-    btn.classList.add('active');
-    state.exercises.add(ex);
-    document.getElementById('strengthOptions').classList.add('visible');
-  }
+  } else { btn.classList.add('active'); state.exercises.add(ex); document.getElementById('strengthOptions').classList.add('visible'); }
   renderMinutesInputs();
 }
-
 function toggleStrengthType(btn) {
   const val = btn.dataset.val;
-  if (btn.classList.contains('active')) {
-    btn.classList.remove('active');
-    state.strength.delete(val);
-  } else {
-    btn.classList.add('active');
-    state.strength.add(val);
-  }
-}
-
-// ---- Load / Save ----
-function loadLog() {
-  try { return JSON.parse(localStorage.getItem('healthLog') || '[]'); }
-  catch(e) { return []; }
-}
-function saveLog(entries) {
-  localStorage.setItem('healthLog', JSON.stringify(entries));
+  if (btn.classList.contains('active')) { btn.classList.remove('active'); state.strength.delete(val); }
+  else { btn.classList.add('active'); state.strength.add(val); }
 }
 
 // ---- Log entry ----
-function logEntry() {
+async function logEntry() {
   const date = document.getElementById('logDate').value;
   if (!date) { alert('Please pick a date.'); return; }
-
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
   const exList = Array.from(state.exercises).map(ex => {
     if (ex === 'Strength' && state.strength.size) return `Strength (${Array.from(state.strength).join(', ')})`;
     if (MINUTES_EXERCISES.has(ex) && state.exerciseMinutes[ex]) return `${ex} (${state.exerciseMinutes[ex]} min)`;
     return ex;
   });
-
-  const weight = parseFloat(document.getElementById('weightInput').value) || '';
-  const notes = document.getElementById('notesInput').value.trim();
-
   const entry = {
     date,
-    mornMed: state.mornMed,
-    evenMed: state.evenMed,
+    mornMed: state.mornMed, evenMed: state.evenMed,
     mounjaro: state.mounjaro,
     mounjaroDose: state.mounjaro === 'yes' ? state.mounjaroDose : '',
     walks: state.walks,
@@ -887,31 +662,28 @@ function logEntry() {
     exerciseList: Array.from(state.exercises),
     exerciseMinutes: { ...state.exerciseMinutes },
     strength: Array.from(state.strength),
-    weight,
-    notes
+    weight: parseFloat(document.getElementById('weightInput').value) || '',
+    notes: document.getElementById('notesInput').value.trim()
   };
-
-  const entries = loadLog();
-  // Replace if same date
-  const idx = entries.findIndex(e => e.date === date);
-  if (idx >= 0) entries[idx] = entry;
-  else entries.unshift(entry);
-
-  entries.sort((a, b) => b.date.localeCompare(a.date));
-  saveLog(entries);
-  renderTable(entries);
-  showToast();
+  try {
+    await saveEntry(entry);
+    await refreshLog();
+    showToast('Entry saved! ✓', false);
+  } catch(e) {
+    showToast('Save failed — check your connection', true);
+  }
+  btn.disabled = false; btn.textContent = '+ Save Today\'s Entry';
 }
 
 // ---- Render table ----
 function renderTable(entries) {
   const tbody = document.getElementById('logBody');
   if (!entries.length) {
-    tbody.innerHTML = '<tr><td colspan="8" class="empty-msg">No entries yet — log your first day!</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="empty-msg">No entries yet — log your first day!</td></tr>';
     return;
   }
   tbody.innerHTML = entries.map(e => {
-    const medIcon = v => v === 'yes' ? '<span class="check">✓</span>' : v === 'no' ? '<span class="red" style="color:#ef4444;font-weight:700;">✗</span>' : '<span class="cross">—</span>';
+    const medIcon = v => v === 'yes' ? '<span class="check">✓</span>' : v === 'no' ? '<span style="color:#ef4444;font-weight:700;">✗</span>' : '<span class="cross">—</span>';
     const mounj = e.mounjaro === 'yes' ? `<span class="mounjaro-badge">💉 ${e.mounjaroDose || 'Took it'}</span>` : '';
     const weightCell = e.weight ? `<strong>${e.weight}</strong> lbs` : '<span class="cross">—</span>';
     const notesCell = e.notes ? `<span style="font-size:0.78rem;color:#555;">${e.notes}</span>` : '<span class="cross">—</span>';
@@ -924,8 +696,19 @@ function renderTable(entries) {
       <td>${e.exercise || '<span class="cross">—</span>'}</td>
       <td>${weightCell}</td>
       <td style="max-width:180px;">${notesCell}</td>
+      <td><button onclick="deleteEntry('${e.date}')" style="background:none;border:none;cursor:pointer;color:#ccc;font-size:1rem;padding:2px 6px;border-radius:4px;transition:color 0.15s;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#ccc'" title="Delete entry">✕</button></td>
     </tr>`;
   }).join('');
+}
+
+// ---- Delete entry ----
+async function deleteEntry(date) {
+  if (!confirm(`Delete the entry for ${date}?`)) return;
+  const { error } = await db.from('health_log').delete().eq('date', date);
+  if (error) { showToast('Delete failed — try again', true); return; }
+  await refreshLog();
+  // Clear the form if the deleted date is currently selected
+  if (document.getElementById('logDate').value === date) clearForm(isSaturday(date));
 }
 
 // ---- Import CSV ----
@@ -933,28 +716,22 @@ function importCSV(event) {
   const file = event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = function(e) {
+  reader.onload = async function(e) {
     try {
       const lines = e.target.result.split('\n').map(l => l.trim()).filter(l => l);
       if (lines.length < 2) { alert('No data found in file.'); return; }
-
-      // Parse CSV respecting quoted fields
       function parseRow(line) {
-        const fields = [];
-        let cur = '', inQ = false;
+        const fields = []; let cur = '', inQ = false;
         for (let i = 0; i < line.length; i++) {
           const c = line[i];
-          if (c === '"') { inQ = !inQ; }
+          if (c === '"') inQ = !inQ;
           else if (c === ',' && !inQ) { fields.push(cur); cur = ''; }
-          else { cur += c; }
+          else cur += c;
         }
-        fields.push(cur);
-        return fields;
+        fields.push(cur); return fields;
       }
-
       const headers = parseRow(lines[0]).map(h => h.toLowerCase().trim());
       const idx = h => headers.indexOf(h);
-
       const imported = [];
       for (let i = 1; i < lines.length; i++) {
         const f = parseRow(lines[i]);
@@ -971,30 +748,19 @@ function importCSV(event) {
           weight: parseFloat(f[idx('weight (lbs)')]) || '',
           notes: f[idx('notes')] || ''
         };
-        // Parse exercise string into structured fields for future use
         const exData = parseExerciseString(entry.exercise);
-        entry.exerciseList = exData.list;
-        entry.exerciseMinutes = exData.minutes;
-        entry.strength = exData.strength;
+        entry.exerciseList = exData.list; entry.exerciseMinutes = exData.minutes; entry.strength = exData.strength;
         imported.push(entry);
       }
-
-      if (!imported.length) { alert('No valid rows found. Make sure the file was exported from this tracker.'); return; }
-
-      // Merge: existing entries take priority if same date, otherwise add imported
-      const existing = loadLog();
-      const existingDates = new Set(existing.map(e => e.date));
-      const merged = [...existing];
-      let added = 0;
-      for (const entry of imported) {
-        if (!existingDates.has(entry.date)) { merged.push(entry); added++; }
-      }
-      merged.sort((a, b) => b.date.localeCompare(a.date));
-      saveLog(merged);
-      renderTable(merged);
-      alert(`Import complete! Added ${added} new entr${added !== 1 ? 'ies' : 'y'}. Existing entries were kept as-is.`);
+      if (!imported.length) { alert('No valid rows found.'); return; }
+      const existingDates = new Set(cachedEntries.map(e => e.date));
+      const toInsert = imported.filter(e => !existingDates.has(e.date));
+      if (!toInsert.length) { alert('All entries already exist — nothing new to import.'); return; }
+      for (const entry of toInsert) await saveEntry(entry);
+      await refreshLog();
+      alert(`Import complete! Added ${toInsert.length} new entr${toInsert.length !== 1 ? 'ies' : 'y'}.`);
     } catch(err) {
-      alert('Something went wrong reading the file. Make sure it was exported from this tracker.');
+      alert('Something went wrong reading the file.');
     }
     event.target.value = '';
   };
@@ -1003,45 +769,40 @@ function importCSV(event) {
 
 // ---- Export CSV ----
 function exportCSV() {
-  const entries = loadLog();
-  if (!entries.length) { alert('Nothing to export yet!'); return; }
-  const header = ['Date', 'Morning Meds', 'Evening Meds', 'Mounjaro', 'Mounjaro Dose', 'Dog Walks', 'Exercise', 'Weight (lbs)', 'Notes'];
-  const rows = entries.map(e => [
-    e.date, e.mornMed || '', e.evenMed || '', e.mounjaro || '', e.mounjaroDose || '', e.walks, e.exercise || '', e.weight || '', e.notes || ''
-  ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+  if (!cachedEntries.length) { alert('Nothing to export yet!'); return; }
+  const header = ['Date','Morning Meds','Evening Meds','Mounjaro','Mounjaro Dose','Dog Walks','Exercise','Weight (lbs)','Notes'];
+  const rows = cachedEntries.map(e => [
+    e.date, e.mornMed||'', e.evenMed||'', e.mounjaro||'', e.mounjaroDose||'',
+    e.walks, e.exercise||'', e.weight||'', e.notes||''
+  ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
   const csv = [header.join(','), ...rows].join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url;
-  a.download = `health-log-${todayStr()}.csv`;
-  a.click();
+  a.href = url; a.download = `health-log-${todayStr()}.csv`; a.click();
   URL.revokeObjectURL(url);
 }
 
 // ---- Clear all ----
-function clearAll() {
-  if (confirm('Clear all log entries? This cannot be undone.')) {
-    localStorage.removeItem('healthLog');
-    renderTable([]);
-  }
+async function clearAll() {
+  if (!confirm('Clear ALL log entries? This cannot be undone.')) return;
+  const { error } = await db.from('health_log').delete().neq('date', '');
+  if (error) { showToast('Clear failed — try again', true); return; }
+  cachedEntries = [];
+  renderTable([]);
+  setSyncStatus(true, 'Synced');
 }
 
 // ---- Toast ----
-function showToast() {
+function showToast(msg, isError) {
   const t = document.getElementById('toast');
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2200);
+  t.textContent = msg;
+  t.className = 'toast' + (isError ? ' error' : '') + ' show';
+  setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-// ---- Reset form ----
-function resetForm() {
-  document.getElementById('logDate').value = todayStr();
-  onDateChange();
-}
-
-// ---- On load ----
-renderTable(loadLog());
+// ---- Init ----
+refreshLog().then(() => onDateChange());
 </script>
 </body>
 </html>
