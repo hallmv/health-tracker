@@ -197,6 +197,15 @@
   .check-item.done { color: #22c55e; }
   .check-item.pending { color: #aaa; }
 
+  /* Business tracker */
+  .b-url-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #f0f0f7; }
+  .b-url-row:last-child { border-bottom: none; margin-bottom: 0; }
+  .b-attach-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: #f7f8fa; border-radius: 8px; margin-bottom: 6px; font-size: 0.85rem; color: #333; }
+  .b-attach-item.pending { background: #fffbeb; border: 1px dashed #f59e0b; }
+  .b-attach-item span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .b-add-btn { padding: 8px 16px; border-radius: 8px; border: 1.5px dashed #d0d3e0; background: #f7f8fa; color: #888; font-size: 0.85rem; font-family: inherit; cursor: pointer; width: 100%; margin-top: 8px; transition: all 0.15s; text-align: center; display: block; }
+  .b-add-btn:hover { border-color: #6c63ff; color: #6c63ff; background: #f5f4ff; }
+
   /* Reminders */
   .reminder-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid #f0f0f7; gap: 10px; flex-wrap: wrap; }
   .reminder-row:last-child { border-bottom: none; }
@@ -254,6 +263,7 @@
     <button class="tab-btn" onclick="setTab('health')">❤️ Health</button>
     <button class="tab-btn" onclick="setTab('diet')">🥗 Diet</button>
     <button class="tab-btn" onclick="setTab('reading')">📚 Reading</button>
+    <button class="tab-btn" onclick="setTab('business')">💼 Business</button>
   </div>
 </div>
 
@@ -624,6 +634,49 @@
       <table>
         <thead><tr><th>Date</th><th>Morning</th><th>Commute</th><th>Evening</th><th></th></tr></thead>
         <tbody id="rLogBody"><tr><td colspan="5" class="empty-msg">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- BUSINESS TAB -->
+<div class="tab-page" id="tab-business">
+  <div class="sync-status"><span class="sync-dot" id="bSyncDot"></span><span id="bSyncLabel">Connecting…</span></div>
+
+  <div class="card">
+    <h2>📅 Date</h2>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <input type="date" id="bDate" onchange="bOnDateChange()">
+      <span id="bDayLabel" style="font-size:0.88rem;color:#888;font-weight:500;"></span>
+    </div>
+    <p style="font-size:0.78rem;color:#aaa;margin-top:6px;">What did you do for your business today?</p>
+  </div>
+
+  <div class="card">
+    <h2>📝 Notes</h2>
+    <textarea id="bNotes" placeholder="Document what you worked on — ideas, progress, decisions, wins, anything…" style="min-height:120px;"></textarea>
+  </div>
+
+  <div class="card">
+    <h2>🔗 URLs &amp; Links</h2>
+    <div id="bUrlList"></div>
+    <button class="b-add-btn" onclick="bAddUrl()">+ Add URL</button>
+  </div>
+
+  <div class="card">
+    <h2>📎 Attachments</h2>
+    <div id="bAttachList"></div>
+    <label class="b-add-btn" style="cursor:pointer;">📎 Attach files<input type="file" multiple style="display:none;" onchange="bHandleFiles(event)"></label>
+  </div>
+
+  <button class="save-btn" id="bSaveBtn" onclick="bLogEntry()">+ Save Business Entry</button>
+
+  <div class="card" style="margin-top:20px;">
+    <div class="log-header"><h2>📋 History</h2><button class="export-btn" onclick="bExportCSV()">⬇ Export CSV</button></div>
+    <div class="log-table-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Notes</th><th>Links</th><th>Files</th><th></th></tr></thead>
+        <tbody id="bLogBody"><tr><td colspan="5" class="empty-msg">Loading…</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -1030,6 +1083,114 @@ function rExportCSV(){
   dlCSV(`reading-${todayStr()}.csv`,toCSV(headers,rows));
 }
 
+// ── BUSINESS ──────────────────────────────────────────
+let bCache=[], bUrls=[], bPendingFiles=[], bSavedAttachments=[];
+
+async function bRefresh(){
+  const{data,error}=await db.from('business_log').select('date,data').order('date',{ascending:false});
+  if(error){setSyncStatus('bSyncDot','bSyncLabel',false,'Table not found — run SQL setup');bCache=[];bRenderTable();return;}
+  bCache=data.map(r=>({date:r.date,...r.data}));
+  setSyncStatus('bSyncDot','bSyncLabel',true,'Synced');bRenderTable();
+}
+function bOnDateChange(){
+  const s=document.getElementById('bDate').value; if(!s)return;
+  document.getElementById('bDayLabel').textContent=dayName(s);
+  const ex=bCache.find(e=>e.date===s);
+  if(ex)bPopulate(ex);else bClearForm();
+}
+function bPopulate(e){
+  document.getElementById('bNotes').value=e.notes||'';
+  bUrls=(e.urls||[]).map(u=>({...u}));
+  bSavedAttachments=[...(e.attachments||[])];
+  bPendingFiles=[];
+  bRenderUrls();bRenderAttachments();
+}
+function bClearForm(){
+  document.getElementById('bNotes').value='';
+  bUrls=[];bPendingFiles=[];bSavedAttachments=[];
+  bRenderUrls();bRenderAttachments();
+}
+function bAddUrl(){
+  bUrls.push({label:'',url:''});bRenderUrls();
+  setTimeout(()=>{const inp=document.querySelectorAll('.b-url-input');if(inp.length)inp[inp.length-1].focus();},50);
+}
+function bRemoveUrl(i){bUrls.splice(i,1);bRenderUrls();}
+function bUrlChange(i,field,val){bUrls[i][field]=val;}
+function bRenderUrls(){
+  const el=document.getElementById('bUrlList');
+  if(!bUrls.length){el.innerHTML='<p style="font-size:0.82rem;color:#aaa;margin-bottom:4px;">No links added yet.</p>';return;}
+  el.innerHTML=bUrls.map((u,i)=>`<div class="b-url-row"><div style="flex:1;display:flex;flex-direction:column;gap:5px;"><input type="text" class="b-url-input" placeholder="https://…" value="${u.url||''}" oninput="bUrlChange(${i},'url',this.value)"><input type="text" placeholder="Label (optional)" value="${u.label||''}" oninput="bUrlChange(${i},'label',this.value)" style="font-size:0.82rem;"></div><button class="del-btn" onclick="bRemoveUrl(${i})">✕</button></div>`).join('');
+}
+function bHandleFiles(event){
+  Array.from(event.target.files).forEach(f=>{
+    if(f.size>20*1024*1024){showToast(`${f.name} is too large (max 20MB)`,true);return;}
+    bPendingFiles.push(f);
+  });
+  bRenderAttachments(); event.target.value='';
+}
+function bRemovePending(i){bPendingFiles.splice(i,1);bRenderAttachments();}
+async function bRemoveSaved(i){
+  const att=bSavedAttachments[i];
+  if(att.path){try{await db.storage.from('business').remove([att.path]);}catch(e){}}
+  bSavedAttachments.splice(i,1);
+  const date=document.getElementById('bDate').value;
+  const ex=bCache.find(e=>e.date===date);
+  if(ex){const{date:d,...data}=ex;data.attachments=bSavedAttachments;await db.from('business_log').upsert({date:d,data},{onConflict:'date'});await bRefresh();}
+  bRenderAttachments();
+}
+const bIcon=t=>t&&t.startsWith('image/')?'🖼️':t==='application/pdf'?'📄':t&&t.startsWith('text/')?'📝':'📎';
+function bRenderAttachments(){
+  const el=document.getElementById('bAttachList');
+  let html=bSavedAttachments.map((a,i)=>`<div class="b-attach-item">${bIcon(a.type)} <span>${a.name}</span><a href="${a.url}" target="_blank" style="font-size:0.78rem;color:#6c63ff;white-space:nowrap;">view</a><button class="del-btn" onclick="bRemoveSaved(${i})">✕</button></div>`).join('');
+  html+=bPendingFiles.map((f,i)=>`<div class="b-attach-item pending">${bIcon(f.type)} <span>${f.name} <span style="font-size:0.75rem;color:#f59e0b;">(not saved yet)</span></span><button class="del-btn" onclick="bRemovePending(${i})">✕</button></div>`).join('');
+  el.innerHTML=html||'<p style="font-size:0.82rem;color:#aaa;margin-bottom:4px;">No attachments yet.</p>';
+}
+async function bLogEntry(){
+  const date=document.getElementById('bDate').value; if(!date){alert('Please pick a date.');return;}
+  const btn=document.getElementById('bSaveBtn');btn.disabled=true;btn.textContent='Saving…';
+  const newAtts=[];
+  for(const f of bPendingFiles){
+    const path=`${date}/${Date.now()}-${f.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+    const{error}=await db.storage.from('business').upload(path,f,{upsert:true});
+    if(error){showToast(`Could not upload ${f.name} — check storage setup`,true);continue;}
+    const{data:{publicUrl}}=db.storage.from('business').getPublicUrl(path);
+    newAtts.push({name:f.name,type:f.type,url:publicUrl,path});
+  }
+  const data={notes:document.getElementById('bNotes').value.trim(),urls:bUrls.filter(u=>u.url.trim()),attachments:[...bSavedAttachments,...newAtts]};
+  const{error}=await db.from('business_log').upsert({date,data},{onConflict:'date'});
+  if(error)showToast('Save failed — check your connection',true);
+  else{bPendingFiles=[];await bRefresh();const ex=bCache.find(e=>e.date===date);if(ex)bPopulate(ex);showToast('Business entry saved! ✓',false);}
+  btn.disabled=false;btn.textContent='+ Save Business Entry';
+}
+function bRenderTable(){
+  const tbody=document.getElementById('bLogBody');
+  if(!bCache.length){tbody.innerHTML='<tr><td colspan="5" class="empty-msg">No entries yet — log your first day!</td></tr>';return;}
+  tbody.innerHTML=bCache.map(e=>`<tr>
+    <td><strong>${e.date}</strong></td>
+    <td style="max-width:220px;">${truncate(e.notes,80)||'<span class="cross">—</span>'}</td>
+    <td>${(e.urls&&e.urls.length)?e.urls.map(u=>`<a href="${u.url}" target="_blank" style="font-size:0.78rem;color:#6c63ff;display:block;">${u.label||u.url}</a>`).join(''):'<span class="cross">—</span>'}</td>
+    <td>${(e.attachments&&e.attachments.length)?e.attachments.map(a=>`<a href="${a.url}" target="_blank" style="font-size:0.78rem;color:#6c63ff;display:block;">${bIcon(a.type)} ${a.name}</a>`).join(''):'<span class="cross">—</span>'}</td>
+    <td><button class="del-btn" onclick="bDeleteEntry('${e.date}')" title="Delete">✕</button></td>
+  </tr>`).join('');
+}
+async function bDeleteEntry(date){
+  if(!confirm(`Delete business entry for ${date}?`))return;
+  const ex=bCache.find(e=>e.date===date);
+  if(ex&&ex.attachments&&ex.attachments.length){
+    const paths=ex.attachments.filter(a=>a.path).map(a=>a.path);
+    if(paths.length) await db.storage.from('business').remove(paths);
+  }
+  const{error}=await db.from('business_log').delete().eq('date',date);
+  if(error){showToast('Delete failed',true);return;}
+  await bRefresh();
+  if(document.getElementById('bDate').value===date)bClearForm();
+}
+function bExportCSV(){
+  if(!bCache.length){alert('No business data to export yet.');return;}
+  const rows=bCache.map(e=>[e.date,dayName(e.date),e.notes,(e.urls||[]).map(u=>u.label?`${u.label}: ${u.url}`:u.url).join(' | '),(e.attachments||[]).map(a=>a.name).join(' | ')]);
+  dlCSV(`business-${todayStr()}.csv`,toCSV(['Date','Day','Notes','URLs','Attachments'],rows));
+}
+
 // ── WEEKLY TIPS ───────────────────────────────────────
 function generateTips(s){
   const tips=[];
@@ -1096,7 +1257,8 @@ function renderChecklist(){
     item(h&&(h.exerciseList&&h.exerciseList.length>0||h.walks>0),'Exercise or walks logged')+
     item(h&&h.mood,'Mood logged')+
     item(h&&h.sleepBed,'Sleep logged')+
-    item(r&&r.sessions&&Object.values(r.sessions).some(s=>s.active&&s.book),'Reading logged');
+    item(r&&r.sessions&&Object.values(r.sessions).some(s=>s.active&&s.book),'Reading logged')+
+    item(!!bCache.find(e=>e.date===today&&(e.notes||e.urls&&e.urls.length)),'Business logged');
 }
 
 // ── REMINDERS ─────────────────────────────────────────
@@ -1175,8 +1337,9 @@ document.getElementById('rDate').value=todayStr();
 
 function initApp(){
   remindersLoad();
-  Promise.all([hRefresh(),dRefresh(),rRefresh()]).then(()=>{
+  Promise.all([hRefresh(),dRefresh(),rRefresh(),bRefresh()]).then(()=>{
     hOnDateChange(); dOnDateChange(); rOnDateChange();
+    document.getElementById('bDate').value=todayStr(); bOnDateChange();
     renderWeekSummary(); renderChecklist();
   });
 }
